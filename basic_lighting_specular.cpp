@@ -160,7 +160,7 @@ int main() {
 
     //esfera.setup();
 
-    modelo1.set_escala(1);
+    /*modelo1.set_escala(1);
     modelo1.set_traslacion(-1);
     modelo1.setup();
 
@@ -172,26 +172,17 @@ int main() {
     modelo2.set_traslacion(1);
     modelo2.setup();
     modelo2.vao = modelo1.vao;
-    //modelo2.indices_size = modelo1.indices_size;
-
-    //modelo1.traslacion = 0.05;
-    //modelo2.traslacion = -0.05;
+*/
     piramide.setup();
-    vec3 tras(-1, 0, -1);
-    vec3 cen(0, 0, 0);
-    Esfera nuevaesfera(cen + 1.0f, 1, 20, 20);
-    nuevaesfera.set_escala(1);
-    //nuevaesfera.escala = 0.01;
-    //nuevaesfera.escala = 2;
-    nuevaesfera.setup();
 
-    Esfera nuevaesfera2(vec3(1, 0, 1), 1, 20, 20);
-    //nuevaesfera2.set_escala(1);
-    nuevaesfera2.escala = 1;
-    nuevaesfera2.setup();
+    //PROBANDO MODELO esfera
 
-    //objs.emplace_back(&nuevaesfera);
-    //objs.emplace_back(&nuevaesfera2);
+    Esfera intento1(vec3(-1, 0, 0), 1, 20, 20);
+    intento1.setup();
+
+    Esfera intento2(vec3(1, 0, 1), 1, 20, 20);
+    intento2.setup();
+
     // render loop
     while (!glfwWindowShouldClose(window)) {
         // per-frame time logic
@@ -228,15 +219,21 @@ int main() {
         //glBindVertexArray(cubeVAO);
         //glDrawArrays(GL_TRIANGLES, 0, 36);
 
-        modelo1.display(lightingShader);
+        /*modelo1.display(lightingShader);
         modelo2.display(lightingShader);
         modelo2.change_traslacion(-rotacion_piramide / 10000);
         modelo1.change_traslacion(rotacion_piramide / 10000);
         //piramide.display(lightingShader);
+        */
+        intento1.display(lightingShader);
+        intento2.display(lightingShader);
+        intento2.change_traslacion(-rotacion_piramide / 10000);
+        //std::cout << intento2.traslacion << "\n";
+        intento1.change_traslacion(rotacion_piramide / 10000);
+
         piramide.rotacion = rotacion_piramide;
         rotacion_piramide = 0;
 
-        //nuevaesfera.display(lightingShader);
 
 
         /*std::cout << modelo1.centro.x + modelo1.traslacion << " " << modelo1.centro.y + modelo1.traslacion << " "
@@ -245,21 +242,21 @@ int main() {
                   << " " << modelo1.bs.centro.z + modelo1.bs.traslacion << endl;
 
        */
-        //Esfera esfera1(modelo1.centro + modelo1.traslacion, modelo1.bs.radio, 20, 20);
-        //esfera1.escala = modelo1.bs.escala;
-        //esfera1.setup();
-        //esfera1.display(lightingShader);
+        /*Esfera esfera1(modelo1.centro + modelo1.traslacion, modelo1.bs.radio, 20, 20);
+        esfera1.escala = modelo1.bs.escala;
+        esfera1.setup();
+        esfera1.display(lightingShader);
         assert(modelo1.traslacion == modelo1.bs.traslacion);
         assert(modelo1.centro == modelo1.bs.centro);
         assert(modelo1.escala == modelo1.bs.escala);
 
-        //Esfera esfera2(modelo2.centro + modelo2.bs.traslacion, modelo2.bs.radio, 20, 20);
-        //esfera2.setup();
-        //esfera2.display(lightingShader);
-
+        Esfera esfera2(modelo2.centro + modelo2.bs.traslacion, modelo2.bs.radio, 20, 20);
+        esfera2.setup();
+        esfera2.display(lightingShader);
+*/
         if (objs.size() != 2) {
-            objs.emplace_back(&modelo1);
-            objs.emplace_back(&modelo2);
+            objs.emplace_back(&intento1);
+            objs.emplace_back(&intento2);
         }
 
         // also draw the lamp object

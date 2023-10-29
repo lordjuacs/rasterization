@@ -217,7 +217,7 @@ void Esfera::display(Shader &sh) {
     model = mat4(1.0);
     model = scale(model, vec3(escala));
     //cout << endl << to_string(centro);
-    model = translate(model, centro);
+    model = translate(model, centro + vec3(traslacion));
     sh.setMat4("model", model);
     if (visible) {
         glBindVertexArray(vao);
