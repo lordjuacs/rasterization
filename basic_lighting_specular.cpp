@@ -176,8 +176,10 @@ int main() {
     piramide.setup();
 
     //PROBANDO MODELO esfera
+    float orbital_angle = 0;
+    float rotation_angle = 0;
 
-    Esfera intento1(vec3(-1, 0, 0), 1, 20, 20);
+    Esfera intento1(vec3(-2, 0, 0), 0.5, 20, 20);
     intento1.setup();
 
     Esfera intento2(vec3(1, 0, 1), 1, 20, 20);
@@ -225,11 +227,15 @@ int main() {
         modelo1.change_traslacion(rotacion_piramide / 10000);
         //piramide.display(lightingShader);
         */
+
+        intento1.move_around_point(vec3(0,0,0), orbital_angle, rotation_angle);
+        orbital_angle += 0.02 * 1/60;
+        rotation_angle += 0.05 * 1/60;
         intento1.display(lightingShader);
-        intento2.display(lightingShader);
-        intento2.change_traslacion(-rotacion_piramide / 10000);
+        //intento2.display(lightingShader);
+        //intento2.change_traslacion(vec3(-rotacion_piramide / 10000,0,0));
         //std::cout << intento2.traslacion << "\n";
-        intento1.change_traslacion(rotacion_piramide / 10000);
+        //intento1.change_traslacion(vec3(rotacion_piramide / 10000,0,0));
 
         piramide.rotacion = rotacion_piramide;
         rotacion_piramide = 0;

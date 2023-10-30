@@ -20,7 +20,7 @@ class BoundingSphere {
 public:
     GLfloat radio;
     vec3 centro;
-    float traslacion = 0;
+    vec3 traslacion = vec3(0.0f);
     float escala = 1;
 
     BoundingSphere() {}
@@ -39,7 +39,7 @@ public:
     }
 
     bool colision(BoundingSphere otra) {
-       return distancia_centros(otra) <= otra.radio * otra.escala + radio * escala;
+        return distancia_centros(otra) <= otra.radio * otra.escala + radio * escala;
     }
 };
 
@@ -53,7 +53,7 @@ public:
     GLuint vao, vbo_position;
     mat4 model;
     vec3 centro;
-    float traslacion;
+    vec3 traslacion = vec3(0.0f);
     float escala = 1;
     vec3 rotacion;
     BoundingSphere bs;
@@ -64,19 +64,19 @@ public:
     GLint POSITION_ATTRIBUTE = 0, NORMAL_ATTRIBUTE = 1, TEXCOORD0_ATTRIBUTE = 8;
 
     Objeto() {
-        traslacion = 0;
+        traslacion = vec3(0.0f);
     }
 
     vec3 cal_normal(vec3 v1, vec3 v2, vec3 v3) {
         return glm::cross(v2 - v1, v3 - v2);
     }
 
-    void set_traslacion(float tras) {
+    void set_traslacion(vec3 tras) {
         this->traslacion = tras;
         this->bs.traslacion = tras;
     }
 
-    void change_traslacion(float change) {
+    void change_traslacion(vec3 change) {
         this->traslacion += change;
         this->bs.traslacion += change;
     }
@@ -117,6 +117,23 @@ public:
     GLuint setup();
 
     void display(Shader &sh);
+
+    void move_around_point(vec3 point, float orbital_angle, float rotation_angle) {
+        float radius_ = sqrt(
+                pow(point.x - this->bs.getc().x, 2) + pow(point.y - this->bs.getc().y, 2) +
+                pow(point.z - this->bs.getc().z, 2));
+        float a = radius_;
+        /*auto new_x = point.x + radius_ * cos(orbital_angle);
+        auto new_y = point.z + b*radius_
+        auto new_z = point.z + radius_ * sin(orbital_angle);
+         */
+        float e = 0.0167;
+        float b = a * sqrt(1.0f - e * e);
+        auto new_x = point.x + a * cos(orbital_angle);
+        auto new_y = point.y + b * sin(orbital_angle) * tan(23.5 * M_PI / 180);
+        auto new_z = point.z + a * sin(orbital_angle);
+        this->traslacion = vec3(new_x - this->centro.x, new_y - this->centro.y, new_z - this->centro.z);
+    }
 };
 
 class Plano : public Objeto {
