@@ -1,7 +1,11 @@
 #version 330 core
 out vec4 FragColor;
 
+in vec2 TexCoords; // Texture coordinates passed from the vertex shader
+
+uniform sampler2D sunTexture;
+
 void main()
 {
-    FragColor = vec4(1.0); // set all 4 vector values to 1.0
+    FragColor = texture(sunTexture, TexCoords);
 }

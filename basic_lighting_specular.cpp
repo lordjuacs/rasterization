@@ -9,6 +9,7 @@
 #include "camera.h"
 #include "Objeto.h"
 #include "glut_ply.h"
+#include "stb_image.h"
 
 #include <iostream>
 
@@ -85,6 +86,33 @@ int main() {
     // build and compile our shader zprogram
     Shader lightingShader("../2.2.basic_lighting.vs", "../2.2.basic_lighting.fs");
     Shader lightCubeShader("../2.2.light_cube.vs", "../2.2.light_cube.fs");
+    Esfera lightSphere(lightPos, 0.1f, 20, 20);  // Implement Sphere class as needed
+    lightSphere.setup();
+    Shader lightSphereShader("../2.2.light_cube.vs", "../2.2.light_cube.fs");  // Create a new shader program for the sphere
+
+
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_2D, textureID);
+
+    int width, height, nrChannels;
+    unsigned char *data = stbi_load("../textures/sun_texture.jpg", &width, &height, &nrChannels, 0);
+    if (data)
+    {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else
+    {
+        std::cout << "Failed to load texture" << std::endl;
+    }
+    stbi_image_free(data);
+
+// Set texture wrapping and filtering options
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     float vertices[] = {
@@ -185,6 +213,7 @@ int main() {
     Esfera intento2(vec3(1, 0, 1), 1, 20, 20);
     intento2.setup();
 
+    vec3 sun = vec3(1,1,1);
     // render loop
     while (!glfwWindowShouldClose(window)) {
         // per-frame time logic
@@ -201,8 +230,8 @@ int main() {
 
         // be sure to activate shader when setting uniforms/drawing objects
         lightingShader.use();
-        lightingShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
-        lightingShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
+        lightingShader.setVec3("objectColor",  1,0,0.937);
+        lightingShader.setVec3("lightColor", sun.x, sun.y, sun.z);
         lightingShader.setVec3("lightPos", lightPos);
         lightingShader.setVec3("viewPos", camera.Position);
 
@@ -266,7 +295,8 @@ int main() {
         }
 
         // also draw the lamp object
-        lightCubeShader.use();
+        /*lightCubeShader.use();
+        lightingShader.setVec3("lightColor", sun.x, sun.y, sun.z);
         lightCubeShader.setMat4("projection", projection);
         lightCubeShader.setMat4("view", view);
         model = glm::mat4(1.0f);
@@ -275,7 +305,19 @@ int main() {
         lightCubeShader.setMat4("model", model);
 
         glBindVertexArray(lightCubeVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glDrawArrays(GL_TRIANGLES, 0, 36);*/
+        lightSphereShader.use();
+        lightSphereShader.setInt("sunTexture", 0);
+        lightSphereShader.setMat4("projection", projection);
+        lightSphereShader.setMat4("view", view);
+        lightSphereShader.setMat4("model", glm::mat4(1.0f));  // Set model matrix as needed
+        lightSphereShader.setVec3("lightColor", sun.x, sun.y, sun.z);  // Adjust color as needed
+
+        // Bind the texture
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, textureID);
+
+        lightSphere.display(lightSphereShader);  // Render the light sphere
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         glfwSwapBuffers(window);
