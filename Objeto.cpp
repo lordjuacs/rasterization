@@ -1,7 +1,3 @@
-//
-// Created by hgallegos on 5/10/2022.
-//
-
 #include "Objeto.h"
 
 GLuint Piramide::setup() {
@@ -43,8 +39,6 @@ void Piramide::display(Shader &sh) {
     model = mat4(1.0);
     model = scale(model, vec3(escala));
     model = glm::rotate(model, glm::radians(rotacion), vec3(0, 1, 1));
-    //cout << endl << to_string(centro);
-    //model = translate(model, centro);
     sh.setMat4("model", model);
     if (visible) {
         glBindVertexArray(vao);

@@ -28,29 +28,29 @@ const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
 // camera
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+Camera camera(glm::vec3(20.0f, 10.0f, 20.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
 
+//escala
+float escalita = 1.0f;
 // timing
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
-float rotacion_piramide;
+float rotx;
+float roty;
+float rotz;
 // lighting
 glm::vec3 lightPos(0.0f, 0.0f, 0.0f);
 
-//Esfera esfera(vec3(0),2., 20, 20);
 Piramide piramide;
-Model_PLY modelo1, modelo2;
 
 std::vector<Objeto *> objs;
+std::vector<Model_PLY> plys;
+char *archivo = "../models/cow.ply";
 
 int main() {
-    char *archivo = "../models/cow.ply";
-    modelo1.Load(archivo);
-    modelo2.Load(archivo);
-
     // glfw: initialize and configure
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -63,7 +63,7 @@ int main() {
 
     // glfw window creation
     GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
-    if (window == NULL) {
+    if (window == nullptr) {
         std::cout << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
         return -1;
@@ -84,11 +84,14 @@ int main() {
     // configure global opengl state
     glEnable(GL_DEPTH_TEST);
     // build and compile our shader zprogram
-    Shader lightingShader("../2.2.basic_lighting.vs", "../2.2.basic_lighting.fs");
-    Shader lightCubeShader("../2.2.light_cube.vs", "../2.2.light_cube.fs");
-    Esfera lightSphere(lightPos, 0.1f, 20, 20);  // Implement Sphere class as needed
-    lightSphere.setup();
-    Shader lightSphereShader("../2.2.light_cube.vs", "../2.2.light_cube.fs");  // Create a new shader program for the sphere
+    Shader lightingShader("../lighting.vs", "../lighting.fs");
+    Esfera sunSphere(lightPos, 5.0f, 200, 200, 1);  // Implement Sphere class as needed
+    vec3 sun = vec3(1, 1, 1);
+    sunSphere.setup();
+    sunSphere.nombre = "sun";
+
+    Shader textureShader("../texture.vs",
+                         "../texture.fs");  // Create a new shader program for the sphere
 
 
     unsigned int textureID;
@@ -97,14 +100,24 @@ int main() {
 
     int width, height, nrChannels;
     unsigned char *data = stbi_load("../textures/sun_texture.jpg", &width, &height, &nrChannels, 0);
-    if (data)
-    {
+    if (data) {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
-    }
-    else
-    {
+    } else {
         std::cout << "Failed to load texture" << std::endl;
+    }
+    stbi_image_free(data);
+
+    unsigned int textureVaca;
+    glGenTextures(1, &textureVaca);
+    glBindTexture(GL_TEXTURE_2D, textureVaca);
+
+    data = stbi_load("../textures/cow.jpg", &width, &height, &nrChannels, 0);
+    if (data) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    } else {
+        std::cout << "Failed to load texture for 'vaca'" << std::endl;
     }
     stbi_image_free(data);
 
@@ -114,108 +127,89 @@ int main() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    // set up vertex data (and buffer(s)) and configure vertex attributes
-    float vertices[] = {
-            -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f,
-            0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f,
-            0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f,
-            0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f,
-            -0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f,
-            -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f,
 
-            -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f,
-            0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f,
-            0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f,
-            0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f,
-            -0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f,
-            -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f,
-
-            -0.5f, 0.5f, 0.5f, -1.0f, 0.0f, 0.0f,
-            -0.5f, 0.5f, -0.5f, -1.0f, 0.0f, 0.0f,
-            -0.5f, -0.5f, -0.5f, -1.0f, 0.0f, 0.0f,
-            -0.5f, -0.5f, -0.5f, -1.0f, 0.0f, 0.0f,
-            -0.5f, -0.5f, 0.5f, -1.0f, 0.0f, 0.0f,
-            -0.5f, 0.5f, 0.5f, -1.0f, 0.0f, 0.0f,
-
-            0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f,
-            0.5f, 0.5f, -0.5f, 1.0f, 0.0f, 0.0f,
-            0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f,
-            0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f,
-            0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f,
-            0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f,
-
-            -0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f,
-            0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f,
-            0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f,
-            0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f,
-            -0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f,
-            -0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f,
-
-            -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
-            0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
-            0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f,
-            0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f,
-            -0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f,
-            -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f
-    };
-    // first, configure the cube's VAO (and VBO)
-    unsigned int VBO, cubeVAO;
-    glGenVertexArrays(1, &cubeVAO);
-    glGenBuffers(1, &VBO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    glBindVertexArray(cubeVAO);
-    // position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *) 0);
-    glEnableVertexAttribArray(0);
-    // normal attribute
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *) (3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-
-    // second, configure the light's VAO (VBO stays the same; the vertices are the same for the light object which is also a 3D cube)
-    unsigned int lightCubeVAO;
-    glGenVertexArrays(1, &lightCubeVAO);
-    glBindVertexArray(lightCubeVAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    // note that we update the lamp's position attribute's stride to reflect the updated buffer data
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *) 0);
-    glEnableVertexAttribArray(0);
-
-    //modelo2.setup();
-
-    //esfera.setup();
-
-    /*modelo1.set_escala(1);
-    modelo1.set_traslacion(-1);
-    modelo1.setup();
-
-    modelo2.vao = modelo1.vao;
-    modelo2.indices_size = modelo1.indices_size;
-    modelo2.bs.centro = modelo1.bs.centro;
-    modelo2.bs.radio = modelo1.bs.radio;
-
-    modelo2.set_traslacion(1);
-    modelo2.setup();
-    modelo2.vao = modelo1.vao;
-*/
-    piramide.setup();
-
-    //PROBANDO MODELO esfera
     float orbital_angle = 0;
-    float rotation_angle = 0;
 
-    Esfera intento1(vec3(-2, 0, 0), 0.5, 20, 20);
-    intento1.setup();
+    //PLANETAS
+    std::vector<pair<Objeto *, vec3>>
+            planets;
+    planets.emplace_back(&sunSphere, vec3(1, 1, 1));
+// Scaling factor for the planets (one-tenth the size of the sun)
+    float planetScale = 0.05f;
+    int slices = 100, stacks = 100;
+// Mercury
+    Esfera mercury(vec3(0, 0, 8), 5.0f * planetScale, slices, stacks, 1);  // Radius: 2,439.7 km
+    mercury.setup();
+    mercury.nombre = "mercury";
+    glm::vec3 mercuryColor(0.5f, 0.5f, 0.5f);  // Grayish color for Mercury
+    planets.emplace_back(&mercury, mercuryColor);
 
-    Esfera intento2(vec3(1, 0, 1), 1, 20, 20);
-    intento2.setup();
+// Venus
+    Esfera venus(glm::vec3(13.0f, 0.0f, 0.0f), 10.0f * planetScale, slices, stacks, 0.8);  // Radius: 6,051.8 km
+    venus.setup();
+    venus.nombre = "venus";
+    glm::vec3 venusColor(1.0f, 1.0f, 0.0f);  // Yellowish color for Venus
+    planets.emplace_back(&venus, venusColor);
 
-    vec3 sun = vec3(1,1,1);
+// Earth
+    Esfera earth(glm::vec3(20.0f, 0.0f, 0.0f), 12.742f * planetScale, slices, stacks, 0.74);  // Radius: 6,371 km
+    earth.setup();
+    earth.nombre = "earth";
+    glm::vec3 earthColor(0.0f, 0.0f, 1.0f);  // Blue color for Earth
+    planets.emplace_back(&earth, earthColor);
+
+// Mars
+    Esfera mars(glm::vec3(30.0f, 0.0f, 0.0f), 6.779f * planetScale, slices, stacks, 1.15);  // Radius: 3,389.5 km
+    mars.setup();
+    mars.nombre = "mars";
+    glm::vec3 marsColor(1.0f, 0.0f, 0.0f);  // Reddish color for Mars
+    planets.emplace_back(&mars, marsColor);
+
+// Jupiter
+    Esfera jupiter(glm::vec3(45.0f, 0.0f, 0.0f), 139.555f * planetScale, slices, stacks, 0.2);  // Radius: 69,911 km
+    jupiter.setup();
+    jupiter.nombre = "jupiter";
+    glm::vec3 jupiterColor(1.0f, 0.5f, 0.0f);  // Orange color for Jupiter
+    planets.emplace_back(&jupiter, jupiterColor);
+
+// Saturn
+    Esfera saturn(glm::vec3(60.0f, 0.0f, 0.0f), 116.32f * planetScale, slices, stacks, 1.3);  // Radius: 58,232 km
+    saturn.setup();
+    saturn.nombre = "saturn";
+    glm::vec3 saturnColor(1.0f, 1.0f, 0.0f);  // Yellow color for Saturn
+    planets.emplace_back(&saturn, saturnColor);
+
+// Uranus
+    Esfera uranus(glm::vec3(75.0f, 0.0f, 0.0f), 50.762f * planetScale, slices, stacks, 0.41);  // Radius: 25,362 km
+    uranus.setup();
+    uranus.nombre = "uranus";
+    glm::vec3 uranusColor(0.0f, 0.5f, 0.7f);  // Bluish-green color for Uranus
+    planets.emplace_back(&uranus, uranusColor);
+
+// Neptune
+    Esfera neptune(glm::vec3(90.0f, 0.0f, 0.0f), 49.244f * planetScale, slices, stacks, 0.59);  // Radius: 24,622 km
+    neptune.setup();
+    neptune.nombre = "neptune";
+    glm::vec3 neptuneColor(0.0f, 0.0f, 0.5f);  // Deep blue color for Neptune
+    planets.emplace_back(&neptune, neptuneColor);
+
+    //PLY objects
+    Model_PLY mod;
+    mod.Load(archivo);
+    mod.nombre = "vaca";
+    mod.set_traslacion(vec3(15, 15, 0));
+    mod.setup();
+    //objs.emplace_back(&mod);
+    plys.emplace_back(mod);
+
+
+    //mod.display(prueba);
+    for (auto &p: planets)
+        objs.emplace_back(p.first);
+
     // render loop
     while (!glfwWindowShouldClose(window)) {
+        check_colision(objs);
         // per-frame time logic
         float currentFrame = static_cast<float>(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
@@ -225,16 +219,30 @@ int main() {
         processInput(window);
 
         // render
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClearColor(0.071, 0.075, 0.078, 1.0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        for (auto &mod: plys) {
+            mod.rotx = rotx / 100;
+            mod.roty = roty / 100;
+            mod.rotz = rotz / 100;
+            textureShader.use();
+            textureShader.setInt("texture", 1);
+            mod.display(textureShader);
+        }
         // be sure to activate shader when setting uniforms/drawing objects
-        lightingShader.use();
-        lightingShader.setVec3("objectColor",  1,0,0.937);
+        for (auto &p: planets) {
+            if (p.first->nombre == "sun")
+                continue;
+            lightingShader.use();
+            if (p.first->choque) lightingShader.setVec3("objectColor", p.second * 0.5f);
+            else lightingShader.setVec3("objectColor", p.second);
+            p.first->display(lightingShader);
+            p.first->move_around_point(vec3(0, 0, 0), orbital_angle);
+        }
         lightingShader.setVec3("lightColor", sun.x, sun.y, sun.z);
         lightingShader.setVec3("lightPos", lightPos);
         lightingShader.setVec3("viewPos", camera.Position);
-
         // view/projection transformations
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float) SCR_WIDTH / (float) SCR_HEIGHT, 0.1f,
                                                 100.0f);
@@ -246,78 +254,25 @@ int main() {
         glm::mat4 model = glm::mat4(1.0f);
         lightingShader.setMat4("model", model);
 
-        // render the cube
-        //glBindVertexArray(cubeVAO);
-        //glDrawArrays(GL_TRIANGLES, 0, 36);
 
-        /*modelo1.display(lightingShader);
-        modelo2.display(lightingShader);
-        modelo2.change_traslacion(-rotacion_piramide / 10000);
-        modelo1.change_traslacion(rotacion_piramide / 10000);
-        //piramide.display(lightingShader);
-        */
-
-        intento1.move_around_point(vec3(0,0,0), orbital_angle, rotation_angle);
-        orbital_angle += 0.02 * 1/60;
-        rotation_angle += 0.05 * 1/60;
-        intento1.display(lightingShader);
-        //intento2.display(lightingShader);
-        //intento2.change_traslacion(vec3(-rotacion_piramide / 10000,0,0));
-        //std::cout << intento2.traslacion << "\n";
-        //intento1.change_traslacion(vec3(rotacion_piramide / 10000,0,0));
-
-        piramide.rotacion = rotacion_piramide;
-        rotacion_piramide = 0;
+        orbital_angle += 0.005 * 1 / 60;
 
 
-
-        /*std::cout << modelo1.centro.x + modelo1.traslacion << " " << modelo1.centro.y + modelo1.traslacion << " "
-                  << modelo1.centro.z + modelo1.traslacion << endl;
-        std::cout << modelo1.bs.centro.x + modelo1.bs.traslacion << " " << modelo1.bs.centro.y + modelo1.bs.traslacion
-                  << " " << modelo1.bs.centro.z + modelo1.bs.traslacion << endl;
-
-       */
-        /*Esfera esfera1(modelo1.centro + modelo1.traslacion, modelo1.bs.radio, 20, 20);
-        esfera1.escala = modelo1.bs.escala;
-        esfera1.setup();
-        esfera1.display(lightingShader);
-        assert(modelo1.traslacion == modelo1.bs.traslacion);
-        assert(modelo1.centro == modelo1.bs.centro);
-        assert(modelo1.escala == modelo1.bs.escala);
-
-        Esfera esfera2(modelo2.centro + modelo2.bs.traslacion, modelo2.bs.radio, 20, 20);
-        esfera2.setup();
-        esfera2.display(lightingShader);
-*/
-        if (objs.size() != 2) {
-            objs.emplace_back(&intento1);
-            objs.emplace_back(&intento2);
-        }
-
-        // also draw the lamp object
-        /*lightCubeShader.use();
-        lightingShader.setVec3("lightColor", sun.x, sun.y, sun.z);
-        lightCubeShader.setMat4("projection", projection);
-        lightCubeShader.setMat4("view", view);
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, lightPos);
-        model = glm::scale(model, glm::vec3(0.1f)); // a smaller cube
-        lightCubeShader.setMat4("model", model);
-
-        glBindVertexArray(lightCubeVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);*/
-        lightSphereShader.use();
-        lightSphereShader.setInt("sunTexture", 0);
-        lightSphereShader.setMat4("projection", projection);
-        lightSphereShader.setMat4("view", view);
-        lightSphereShader.setMat4("model", glm::mat4(1.0f));  // Set model matrix as needed
-        lightSphereShader.setVec3("lightColor", sun.x, sun.y, sun.z);  // Adjust color as needed
+        textureShader.use();
+        textureShader.setInt("texture", 0);
+        textureShader.setMat4("projection", projection);
+        textureShader.setMat4("view", view);
+        textureShader.setMat4("model", glm::mat4(1.0f));  // Set model matrix as needed
+        textureShader.setVec3("lightColor", sun.x, sun.y, sun.z);  // Adjust color as needed
 
         // Bind the texture
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, textureID);
 
-        lightSphere.display(lightSphereShader);  // Render the light sphere
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, textureVaca);
+
+        sunSphere.display(textureShader);  // Render the light sphere
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         glfwSwapBuffers(window);
@@ -325,22 +280,21 @@ int main() {
     }
 
     // optional: de-allocate all resources once they've outlived their purpose:
-    glDeleteVertexArrays(1, &cubeVAO);
-    glDeleteVertexArrays(1, &lightCubeVAO);
-    glDeleteBuffers(1, &VBO);
-
+    /*  glDeleteVertexArrays(1, &cubeVAO);
+      glDeleteVertexArrays(1, &lightCubeVAO);
+      glDeleteBuffers(1, &VBO);
+  */
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
-    //modelo1.imprimir();
     glfwTerminate();
     return 0;
 }
+
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 void processInput(GLFWwindow *window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
-
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         camera.ProcessKeyboard(FORWARD, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
@@ -349,10 +303,60 @@ void processInput(GLFWwindow *window) {
         camera.ProcessKeyboard(LEFT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         camera.ProcessKeyboard(RIGHT, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
-        rotacion_piramide += 2;
-        check_colision(objs);
-        objs.clear();
+    if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS) {
+        rotx += 2;
+    }
+    if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS) {
+        roty += 2;
+    }
+    if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS) {
+        rotz += 2;
+    }
+    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+        for (auto &mod: plys) {
+            mod.change_traslacion(vec3(2.0f / 1000.0f, 0, 0));
+        }
+    }
+    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+        for (auto &mod: plys) {
+            mod.change_traslacion(vec3(-2.0f / 1000.0f, 0, 0));
+        }
+    }
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+        for (auto &mod: plys) {
+            mod.change_traslacion(vec3(0, 0, -2.0f / 1000.0f));
+        }
+    }
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+        for (auto &mod: plys) {
+            mod.change_traslacion(vec3(0, 0, 2.0f / 1000.0f));
+        }
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) {
+        for (auto &mod: plys) {
+            mod.change_traslacion(vec3(0, -2.0f / 1000.0f, 0));
+        }
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
+        for (auto &mod: plys) {
+            mod.change_traslacion(vec3(0, 2.0f / 1000.0f, 0));
+        }
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS) {
+        escalita *= 1.001f;
+        for (auto &mod: plys) {
+            mod.set_escala(escalita);
+        }
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS) {
+        escalita /= 1.001f;
+        for (auto &mod: plys) {
+            mod.set_escala(escalita);
+        }
     }
 }
 
@@ -391,12 +395,25 @@ void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
 
 void check_colision(vector<Objeto *> &objetos) {
     if (objetos.empty()) return;
-    for (int i = 0; i < objetos.size() - 1; ++i) {
+    /*for (int i = 0; i < objetos.size() - 1; ++i) {
         for (int j = i + 1; j < objetos.size(); ++j) {
             if (objetos[i]->bs.colision(objetos[j]->bs)) {
                 std::cout << "COLISION\n";
                 return;
             }
+        }
+    }*/
+    for (auto &mod: plys) {
+        for (auto &o: objs) {
+            if (mod.bs.colision(o->bs)) {
+                std::cout << "COLISION ";
+                if(o->nombre == "sun")
+                    mod.set_traslacion(vec3(15, 15, 0));
+                std::cout << o->nombre << "\n";
+                o->choque = true;
+                return;
+            }
+            o->choque = false;
         }
     }
 }

@@ -60,18 +60,11 @@ int Model_PLY::Load(char *filename) {
                        &val[i], &val[i + 1], &val[i + 2],
                        &val[i + 3], &val[i + 4], &val[i + 5]);
                 vertices.emplace_back(vec3(val[i], val[i + 1], val[i + 2]));
-                /*if (val[i] <= min_x) min_x = val[i];
-                if (val[i+1] <= min_y) min_y = val[i+1];
-                if (val[i+2] <= min_z) min_z = val[i+2];
-                if (val[i] > max_x) max_x = val[i];
-                if (val[i+1] > max_y) max_y = val[i+1];
-                if (val[i+2] > max_z) max_z = val[i+2];*/
                 total_x += val[i];
                 total_y += val[i + 1];
                 total_z += val[i + 2];
                 positions.emplace_back(vec3(val[i], val[i + 1], val[i + 2]));
                 normals.emplace_back(vec3(val[i + 3], val[i + 4], val[i + 5]));
-                //std::cout << Vertices[i] << "\t" << Vertices[i+1] << "\t" << Vertices[i+2] << std::endl;
             }
             //vec3 nuevo_centro((max_x + min_x) / 2, (max_y + min_y) / 2, (max_z + min_z) / 2);
             float cx = total_x / cantVertices;
@@ -152,9 +145,12 @@ int Model_PLY::enviar_GPU() {
 
 void Model_PLY::display(Shader &sh) {
     model = mat4(1.0);
-    model = scale(model, vec3(escala));
     //this->bs.radio *= escala;
     model = translate(model, centro + vec3(traslacion));
+    model = rotate(model, glm::radians(rotx), vec3(1, 0, 0));
+    model = rotate(model, glm::radians(roty), vec3(0, 1, 0));
+    model = rotate(model, glm::radians(rotz), vec3(0, 0, 1));
+    model = scale(model, vec3(escala));
     //this->bs.centro += vec3(traslacion);
     //std::cout<<centro.x + traslacion<<" "<<centro.y + traslacion<<" "<<centro.z + traslacion<< endl;
     //std::cout<<bs.centro.x + bs.traslacion<<" "<<bs.centro.y + bs.traslacion<<" "<<bs.centro.z + bs.traslacion<< endl;
